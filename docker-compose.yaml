@@ -1,0 +1,329 @@
+---
+version: '3.7'
+services:
+  ############################################################################
+  # Traefik Reverse Proxy
+  ############################################################################
+  traefik:
+    container_name: traefik
+    image: traefik:latest
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Named volume for ACME data
+      - traefik-letsencrypt:/letsencrypt
+      # Docker socket for Traefik to discover containers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=${TZ}
+    command:
+      # Enable dashboard, enable Docker provider
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+
+      # EntryPoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+
+      # Let's Encrypt (using http challenge)
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=${LETSENCRYPT_EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.myresolver.acme.caserver=${ACME_CA_SERVER}"
+
+    labels:
+      # Enable Traefik for this container
+      - "traefik.enable=true"
+      # Dashboard at https://traefik.${DOMAIN}
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=myresolver"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+
+  ############################################################################
+  # Home Assistant
+  ############################################################################
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:latest
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    expose:
+      - "8123"
+    volumes:
+      # Named volume for Home Assistant config
+      - home-assistant:/config
+      # Localtime (optional if you need local time in container logs)
+      - /etc/localtime:/etc/localtime:ro
+    privileged: false
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homeassistant.rule=Host(`homeassistant.${DOMAIN}`)"
+      - "traefik.http.routers.homeassistant.entrypoints=websecure"
+      - "traefik.http.routers.homeassistant.tls.certresolver=myresolver"
+      - "traefik.http.services.homeassistant.loadbalancer.server.port=8123"
+
+  ############################################################################
+  # Mosquitto
+  ############################################################################
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto:latest
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    ports:
+      # For local LAN MQTT usage
+      - "1883:1883"
+    command: "mosquitto -c /mosquitto-no-auth.conf"
+    volumes:
+      - mosquitto:/mosquitto/data
+    labels:
+      # If you only want local or LAN usage (no HTTPS), keep Traefik disabled
+      - "traefik.enable=false"
+
+  ############################################################################
+  # Node-RED
+  ############################################################################
+  node-red:
+    container_name: nodered
+    image: nodered/node-red:latest
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    expose:
+      - "1880"
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - nodered:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nodered.rule=Host(`nodered.${DOMAIN}`)"
+      - "traefik.http.routers.nodered.entrypoints=websecure"
+      - "traefik.http.routers.nodered.tls.certresolver=myresolver"
+      - "traefik.http.services.nodered.loadbalancer.server.port=1880"
+
+  ############################################################################
+  # Zigbee2MQTT
+  ############################################################################
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    image: koenkk/zigbee2mqtt:latest
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    expose:
+      - "8080"
+    environment:
+      - TZ=${TZ}
+    volumes:
+      - zigbee2mqtt:/app/data
+      - /run/udev:/run/udev:ro
+    devices:
+      # Example: mapping from /dev/ttyUSB0 to /dev/ttyUSB1 inside container
+      - /dev/ttyUSB0:/dev/ttyUSB1
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.zigbee2mqtt.rule=Host(`zigbee2mqtt.${DOMAIN}`)"
+      - "traefik.http.routers.zigbee2mqtt.entrypoints=websecure"
+      - "traefik.http.routers.zigbee2mqtt.tls.certresolver=myresolver"
+      - "traefik.http.services.zigbee2mqtt.loadbalancer.server.port=8080"
+
+  ############################################################################
+  # Z-Wave JS UI
+  ############################################################################
+  zwave-js-ui:
+    container_name: zwave-js-ui
+    image: zwavejs/zwave-js-ui:latest
+    restart: unless-stopped
+    tty: true
+    stop_signal: SIGINT
+    networks:
+      - traefik_net
+    expose:
+      - "8091"
+      # "3000" if you need to expose websockets externally
+    environment:
+      - TZ=${TZ}
+      - SESSION_SECRET=${ZWAVEJS_SESSION_SECRET}
+      - ZWAVEJS_EXTERNAL_CONFIG=/usr/src/app/store/.config-db
+    devices:
+      - "${ZWAVE_DEVICE}:/dev/zwave"
+    volumes:
+      - zwavejsui:/usr/src/app/store
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.zwavejsui.rule=Host(`zwavejsui.${DOMAIN}`)"
+      - "traefik.http.routers.zwavejsui.entrypoints=websecure"
+      - "traefik.http.routers.zwavejsui.tls.certresolver=myresolver"
+      - "traefik.http.services.zwavejsui.loadbalancer.server.port=8091"
+
+  ############################################################################
+  # InfluxDB
+  ############################################################################
+  influxdb:
+    container_name: influxdb
+    image: influxdb:2
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    expose:
+      - "8086"
+    environment:
+      - TZ=${TZ}
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=homeassistant
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=homeassistant
+      - DOCKER_INFLUXDB_INIT_BUCKET=homeassistant
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.influxdb.rule=Host(`influxdb.${DOMAIN}`)"
+      - "traefik.http.routers.influxdb.entrypoints=websecure"
+      - "traefik.http.routers.influxdb.tls.certresolver=myresolver"
+      - "traefik.http.services.influxdb.loadbalancer.server.port=8086"
+
+  ############################################################################
+  # Grafana
+  ############################################################################
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    expose:
+      - "3000"
+    depends_on:
+      - influxdb
+    volumes:
+      - grafana:/var/lib/grafana
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=myresolver"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+############################################################################
+# WATCHTOWER & WHATS UP DOCKER
+############################################################################
+  watchtower:
+    container_name: watchtower
+    image: containrrr/watchtower:latest
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=${TZ}
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_STOPPED=true
+      - WATCHTOWER_SCHEDULE=0 0 4 * * *  # Runs daily at 4 AM
+    labels:
+      - "traefik.enable=false"
+  whats-up-docker:
+    container_name: wud
+    image: fmartinou/whats-up-docker:latest
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    ports:
+      - "3001:3000"
+    volumes:
+      - wud-store:/store
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=${TZ}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wud.rule=Host(`wud.${DOMAIN}`)"
+      - "traefik.http.routers.wud.entrypoints=websecure"
+      - "traefik.http.routers.wud.tls.certresolver=myresolver"
+      - "traefik.http.services.wud.loadbalancer.server.port=3000"
+
+############################################################################
+# NETWORKS
+############################################################################
+networks:
+  traefik_net:
+    driver: bridge
+
+############################################################################
+# VOLUMES
+############################################################################
+volumes:
+  # Each named volume uses local driver with a bind mount to the path in .env
+  traefik-letsencrypt:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${HOST_VOLUME_TRAEFIK_LETSENCRYPT}
+  home-assistant:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${HOST_VOLUME_HOMEASSISTANT}
+  mosquitto:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${HOST_VOLUME_MOSQUITTO}
+  nodered:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${HOST_VOLUME_NODERED}
+  zigbee2mqtt:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${HOST_VOLUME_ZIGBEE2MQTT}
+  zwavejsui:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${HOST_VOLUME_ZWAVEJSUI}
+  influxdb-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${HOST_VOLUME_INFLUXDB_DATA}
+  influxdb-config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${HOST_VOLUME_INFLUXDB_CONFIG}
+  grafana:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${HOST_VOLUME_GRAFANA}
+  wud-store:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${HOST_VOLUME_WUD_STORE}
