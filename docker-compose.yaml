@@ -115,28 +115,28 @@ services:
   ############################################################################
   # Zigbee2MQTT
   ############################################################################
-  zigbee2mqtt:
-    container_name: zigbee2mqtt
-    image: koenkk/zigbee2mqtt:latest
-    restart: unless-stopped
-    networks:
-      - traefik_net
-    expose:
-      - "8080"
-    environment:
-      - TZ=${TZ}
-    volumes:
-      - zigbee2mqtt:/app/data
-      - /run/udev:/run/udev:ro
-    # devices:
-      # Example: mapping from /dev/ttyUSB0 to /dev/ttyUSB1 inside container
-      # - /dev/ttyUSB0:/dev/ttyUSB1
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.zigbee2mqtt.rule=Host(`zigbee2mqtt.${DOMAIN}`)"
-      - "traefik.http.routers.zigbee2mqtt.entrypoints=websecure"
-      - "traefik.http.routers.zigbee2mqtt.tls.certresolver=myresolver"
-      - "traefik.http.services.zigbee2mqtt.loadbalancer.server.port=8080"
+  # zigbee2mqtt:
+  #   container_name: zigbee2mqtt
+  #   image: koenkk/zigbee2mqtt:latest
+  #   restart: unless-stopped
+  #   networks:
+  #     - traefik_net
+  #   expose:
+  #     - "8080"
+  #   environment:
+  #     - TZ=${TZ}
+  #   volumes:
+  #     - zigbee2mqtt:/app/data
+  #     - /run/udev:/run/udev:ro
+  #   # devices:
+  #     # Example: mapping from /dev/ttyUSB0 to /dev/ttyUSB1 inside container
+  #     # - /dev/ttyUSB0:/dev/ttyUSB1
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.zigbee2mqtt.rule=Host(`zigbee2mqtt.${DOMAIN}`)"
+  #     - "traefik.http.routers.zigbee2mqtt.entrypoints=websecure"
+  #     - "traefik.http.routers.zigbee2mqtt.tls.certresolver=myresolver"
+  #     - "traefik.http.services.zigbee2mqtt.loadbalancer.server.port=8080"
 
   ############################################################################
   # Z-Wave JS UI

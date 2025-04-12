@@ -1,0 +1,5 @@
+# Ignore everything in /data
+data/*
+
+# Except this specific file
+!data/README.md
