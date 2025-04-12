@@ -10,12 +10,12 @@ set -e  # Exit on error
 # 1) Create the directory structure under ./data
 echo "Creating data subdirectories..."
 
-mkdir -p data/traefik/letsencrypt
+mkdir -p data/traefik/config
 mkdir -p data/homeassistant/config
 mkdir -p data/mosquitto/data
-mkdir -p data/nodered/data
+mkdir -p data/nodered/config
 mkdir -p data/zigbee2mqtt/data
-mkdir -p data/zwavejsui/data
+mkdir -p data/zwavejsui/config
 mkdir -p data/influxdb/data
 mkdir -p data/influxdb/config
 mkdir -p data/grafana/data
