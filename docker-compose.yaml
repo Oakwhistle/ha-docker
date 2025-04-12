@@ -128,9 +128,9 @@ services:
     volumes:
       - zigbee2mqtt:/app/data
       - /run/udev:/run/udev:ro
-    devices:
+    # devices:
       # Example: mapping from /dev/ttyUSB0 to /dev/ttyUSB1 inside container
-      - /dev/ttyUSB0:/dev/ttyUSB1
+      # - /dev/ttyUSB0:/dev/ttyUSB1
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.zigbee2mqtt.rule=Host(`zigbee2mqtt.${DOMAIN}`)"
