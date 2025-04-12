@@ -26,10 +26,10 @@ echo "Directory structure created."
 # 2) Ensure correct ownership/permissions
 #    Adjust as needed; here we assume the current user can own the data directory
 #    on Ubuntu. If you want root, change to root:root, etc.
-echo "Setting permissions..."
-sudo chown -R "$(whoami):$(whoami)" data/
-sudo chmod -R 755 data/
-echo "Permissions set."
+# echo "Setting permissions..."
+# sudo chown -R "$(whoami):$(whoami)" data/
+# sudo chmod -R 755 data/
+# echo "Permissions set."
 
 # 3) Rename dot.env to .env (only if .env doesn't already exist)
 if [[ -f ".env" ]]; then
