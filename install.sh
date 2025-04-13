@@ -36,8 +36,10 @@ if [[ -f ".env" ]]; then
   echo "Warning: .env already exists. Skipping rename."
 else
   if [[ -f "dot.env" ]]; then
-    mv dot.env .env
-    echo "Renamed dot.env to .env."
+    cp dot.env .env
+    echo "Copy dot.env to .env."
+    # mv dot.env .env
+    # echo "Renamed dot.env to .env."
   else
     echo "No dot.env file found. Please ensure your environment file is named correctly."
   fi
