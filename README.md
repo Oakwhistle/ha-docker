@@ -49,21 +49,51 @@ Here's an overview of the files and folders in this repo:
 
 ## How to Launch
 
-1. **Clone or copy** this repository to your server running Ubuntu 22.04.
-2. **Review and edit** `dot.env`:
-   - Set your time zone, domain, and credentials.
-   - Update any paths or device settings to match your hardware.
-3. **Run the install script**:
+1. **Clone or copy** this repository:
+
    ```bash
+   git clone https://github.com/Oakwhistle/ha-docker.git
+   cd ha-docker
+   ```
+
+2. **Review and edit** `dot.env`:
+
+   - Set your time zone, domain, credentials, etc.
+   - Update any paths or device settings to match your hardware.
+
+3. **Run the install script**:
+
+   ```bash
+   chmod +x create-certs.sh # Execute for local environments
    chmod +x install.sh
+   ./create-certs.sh
    ./install.sh
    ```
-   - This script will create subdirectories under ./data, rename dot.env to .env, adjust permissions, and start the containers.
+   - This scripts will create self signed certificates, subdirectories under ./data, rename dot.env to .env, adjust permissions, and start the containers.
+
 4. **Verify everything is running**:
+   
    ```bash
+   docker ps
    docker compose ps
+
+   # Tail container's log
+   docker logs -tf <container-name-or-id>
+
+   # Stop containers
+   docker compose down
+
+   # Destroy environment and data (be careful)
+   docker compose down -v
    ```
    - You should see all the services up and running.
+
+5. **Backup your data**:
+   
+   ```bash
+   chmod +x backup-data.sh
+   ./backup-data.sh
+   ```
 
 ## Services:
 
@@ -75,6 +105,30 @@ Here's an overview of the files and folders in this repo:
 - Z-Wave JS UI provides a Z-Wave <-> MQTT or Z-Wave JS environment, accessible at https://zwavejsui.<your-domain> (internally on port 8091).
 - InfluxDB is available via https://influxdb.<your-domain> (internally on port 8086).
 - Grafana is available via https://grafana.<your-domain> (internally on port 3000).
+
+## Lets Encrypt:
+
+To use this feature switch the following comments at `docker-compose.yaml` and restart the container (ie: `docker compose up -d --force-recreate`):
+
+```yaml
+#############################################################
+# Option A: Use Let's Encrypt (commented out in this example)
+#############################################################
+# - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+# - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+# - "--certificatesresolvers.myresolver.acme.email=${LETSENCRYPT_EMAIL}"
+# - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+# - "--certificatesresolvers.myresolver.acme.caserver=${ACME_CA_SERVER}"
+#############################################################
+# Option B: Use Self-Signed Certificates (enabled below)
+#############################################################
+- "--entrypoints.websecure.http.tls=true"
+- "--entrypoints.websecure.http.tls.certresolver="  # Leave empty for manual TLS
+- "--entrypoints.websecure.http.tls.certificates[0].certFile=/certs/cert.pem"
+- "--entrypoints.websecure.http.tls.certificates[0].keyFile=/certs/key.pem"
+```
+
+> Note: this will only work when using a public domain. 
 
 ## Accessing Services:
 
