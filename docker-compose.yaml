@@ -20,6 +20,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - TZ=${TZ}
+      ###################################
+      # Additional environment variables
+      ###################################
+      # - ENVIRONEMTN_VARIABLE=${ENVIRONMENT_VARIABLE_ON_DOTENV_FILE}
     command:
       # Enable dashboard, enable Docker provider
       - "--api.dashboard=true"
@@ -58,6 +62,14 @@ services:
       - traefik_net
     expose:
       - "8123"
+    environment:
+      - TZ=${TZ}
+      # Uncomment if you want to use the host network
+      # - NETWORK_MODE=host
+      ###################################
+      # Additional environment variables
+      ###################################
+      # - ENVIRONEMTN_VARIABLE=${ENVIRONMENT_VARIABLE_ON_DOTENV_FILE}
     volumes:
       # Named volume for Home Assistant config
       - home-assistant:/config
@@ -80,6 +92,11 @@ services:
     restart: unless-stopped
     networks:
       - traefik_net
+    # environment:
+      ###################################
+      # Additional environment variables
+      ###################################
+      # - ENVIRONEMTN_VARIABLE=${ENVIRONMENT_VARIABLE_ON_DOTENV_FILE}
     ports:
       # For local LAN MQTT usage
       - "1883:1883"
@@ -103,6 +120,10 @@ services:
       - "1880"
     environment:
       - TZ=${TZ}
+      ###################################
+      # Additional environment variables
+      ###################################
+      # - ENVIRONEMTN_VARIABLE=${ENVIRONMENT_VARIABLE_ON_DOTENV_FILE}
     volumes:
       - nodered:/data
     labels:
@@ -115,28 +136,32 @@ services:
   ############################################################################
   # Zigbee2MQTT
   ############################################################################
-  # zigbee2mqtt:
-  #   container_name: zigbee2mqtt
-  #   image: koenkk/zigbee2mqtt:latest
-  #   restart: unless-stopped
-  #   networks:
-  #     - traefik_net
-  #   expose:
-  #     - "8080"
-  #   environment:
-  #     - TZ=${TZ}
-  #   volumes:
-  #     - zigbee2mqtt:/app/data
-  #     - /run/udev:/run/udev:ro
-  #   # devices:
-  #     # Example: mapping from /dev/ttyUSB0 to /dev/ttyUSB1 inside container
-  #     # - /dev/ttyUSB0:/dev/ttyUSB1
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.zigbee2mqtt.rule=Host(`zigbee2mqtt.${DOMAIN}`)"
-  #     - "traefik.http.routers.zigbee2mqtt.entrypoints=websecure"
-  #     - "traefik.http.routers.zigbee2mqtt.tls.certresolver=myresolver"
-  #     - "traefik.http.services.zigbee2mqtt.loadbalancer.server.port=8080"
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    image: koenkk/zigbee2mqtt:latest
+    restart: unless-stopped
+    networks:
+      - traefik_net
+    expose:
+      - "8080"
+    environment:
+      - TZ=${TZ}
+      ###################################
+      # Additional environment variables
+      ###################################
+      # - ENVIRONEMTN_VARIABLE=${ENVIRONMENT_VARIABLE_ON_DOTENV_FILE}
+    volumes:
+      - zigbee2mqtt:/app/data
+      # - /run/udev:/run/udev:ro
+    # devices:
+      # Example: mapping from /dev/ttyUSB0 to /dev/ttyUSB1 inside container
+      # - /dev/ttyUSB0:/dev/ttyUSB1
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.zigbee2mqtt.rule=Host(`zigbee2mqtt.${DOMAIN}`)"
+      - "traefik.http.routers.zigbee2mqtt.entrypoints=websecure"
+      - "traefik.http.routers.zigbee2mqtt.tls.certresolver=myresolver"
+      - "traefik.http.services.zigbee2mqtt.loadbalancer.server.port=8080"
 
   ############################################################################
   # Z-Wave JS UI
@@ -155,7 +180,11 @@ services:
     environment:
       - TZ=${TZ}
       - SESSION_SECRET=${ZWAVEJS_SESSION_SECRET}
-      - ZWAVEJS_EXTERNAL_CONFIG=/usr/src/app/store/.config-db
+      # - ZWAVEJS_EXTERNAL_CONFIG=/usr/src/app/store/.config-db
+      ###################################
+      # Additional environment variables
+      ###################################
+      # - ENVIRONEMTN_VARIABLE=${ENVIRONMENT_VARIABLE_ON_DOTENV_FILE}
     devices:
       - "${ZWAVE_DEVICE}:/dev/zwave"
     volumes:
@@ -185,6 +214,10 @@ services:
       - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_PASSWORD}
       - DOCKER_INFLUXDB_INIT_ORG=homeassistant
       - DOCKER_INFLUXDB_INIT_BUCKET=homeassistant
+      ###################################
+      # Additional environment variables
+      ###################################
+      # - ENVIRONEMTN_VARIABLE=${ENVIRONMENT_VARIABLE_ON_DOTENV_FILE}
     volumes:
       - influxdb-data:/var/lib/influxdb2
       - influxdb-config:/etc/influxdb2
@@ -204,6 +237,11 @@ services:
     restart: unless-stopped
     networks:
       - traefik_net
+    # environment:
+      ###################################
+      # Additional environment variables
+      ###################################
+      # - ENVIRONEMTN_VARIABLE=${ENVIRONMENT_VARIABLE_ON_DOTENV_FILE}
     expose:
       - "3000"
     depends_on:
@@ -233,6 +271,11 @@ services:
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_INCLUDE_STOPPED=true
       - WATCHTOWER_SCHEDULE=0 0 4 * * *  # Runs daily at 4 AM
+      # - WATCHTOWER_SCHEDULE=0 3 * * 1  # Runs at 3 AM every Monday
+      ###################################
+      # Additional environment variables
+      ###################################
+      # - ENVIRONEMTN_VARIABLE=${ENVIRONMENT_VARIABLE_ON_DOTENV_FILE}
     labels:
       - "traefik.enable=false"
   whats-up-docker:
@@ -248,6 +291,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - TZ=${TZ}
+      ###################################
+      # Additional environment variables
+      ###################################
+      # - ENVIRONEMTN_VARIABLE=${ENVIRONMENT_VARIABLE_ON_DOTENV_FILE}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.wud.rule=Host(`wud.${DOMAIN}`)"
@@ -327,3 +374,10 @@ volumes:
       type: none
       o: bind
       device: ${HOST_VOLUME_WUD_STORE}
+  # Uncomment if you want to use a host volume for a specific container
+  # <volume-name>:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: ${HOST_VOLUME_CONTAINERNAME_STORE}
