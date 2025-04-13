@@ -1,5 +1,6 @@
 # Ignore everything in /data
 data/*
+certs/*
 
 # Except this specific file
 !data/README.md

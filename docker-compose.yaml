@@ -18,6 +18,10 @@ services:
       - traefik-letsencrypt:/letsencrypt
       # Docker socket for Traefik to discover containers
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      ###########################
+      # Self Signed certificates
+      ###########################
+      # - ./certs:/certs
     environment:
       - TZ=${TZ}
       ###################################
@@ -25,26 +29,35 @@ services:
       ###################################
       # - ENVIRONEMTN_VARIABLE=${ENVIRONMENT_VARIABLE_ON_DOTENV_FILE}
     command:
-      # Enable dashboard, enable Docker provider
+      # Enable Traefik dashboard API
       - "--api.dashboard=true"
       - "--api.insecure=false"
+      # Enable Docker as a provider
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-
-      # EntryPoints
+      # Define entry points for HTTP and HTTPS
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-
-      # Let's Encrypt (using http challenge)
-      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.myresolver.acme.email=${LETSENCRYPT_EMAIL}"
-      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.myresolver.acme.caserver=${ACME_CA_SERVER}"
+      #############################################################
+      # Option A: Use Let's Encrypt (commented out in this example)
+      #############################################################
+      # - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      # - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      # - "--certificatesresolvers.myresolver.acme.email=${LETSENCRYPT_EMAIL}"
+      # - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      # - "--certificatesresolvers.myresolver.acme.caserver=${ACME_CA_SERVER}"
+      #############################################################
+      # Option B: Use Self-Signed Certificates (enabled below)
+      #############################################################
+      - "--entrypoints.websecure.http.tls=true"
+      - "--entrypoints.websecure.http.tls.certresolver="  # Leave empty for manual TLS
+      - "--entrypoints.websecure.http.tls.certificates[0].certFile=/certs/cert.pem"
+      - "--entrypoints.websecure.http.tls.certificates[0].keyFile=/certs/key.pem"
 
     labels:
-      # Enable Traefik for this container
+      # Enable Traefik to route traffic to itself
       - "traefik.enable=true"
+      # Route for accessing the Traefik dashboard
       # Dashboard at https://traefik.${DOMAIN}
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
