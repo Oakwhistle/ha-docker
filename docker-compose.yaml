@@ -9,7 +9,7 @@ services:
     image: traefik:latest
     restart: unless-stopped
     networks:
-      - traefik_net
+      - labnet
     ports:
       - "80:80"
       - "443:443"
@@ -59,7 +59,7 @@ services:
     image: ghcr.io/home-assistant/home-assistant:latest
     restart: unless-stopped
     networks:
-      - traefik_net
+      - labnet
     expose:
       - "8123"
     environment:
@@ -91,7 +91,7 @@ services:
     image: eclipse-mosquitto:latest
     restart: unless-stopped
     networks:
-      - traefik_net
+      - labnet
     # environment:
       ###################################
       # Additional environment variables
@@ -115,7 +115,7 @@ services:
     image: nodered/node-red:latest
     restart: unless-stopped
     networks:
-      - traefik_net
+      - labnet
     expose:
       - "1880"
     environment:
@@ -141,7 +141,7 @@ services:
     image: koenkk/zigbee2mqtt:latest
     restart: unless-stopped
     networks:
-      - traefik_net
+      - labnet
     expose:
       - "8080"
     environment:
@@ -173,7 +173,7 @@ services:
     tty: true
     stop_signal: SIGINT
     networks:
-      - traefik_net
+      - labnet
     expose:
       - "8091"
       # "3000" if you need to expose websockets externally
@@ -204,7 +204,7 @@ services:
     image: influxdb:2
     restart: unless-stopped
     networks:
-      - traefik_net
+      - labnet
     expose:
       - "8086"
     environment:
@@ -236,7 +236,7 @@ services:
     image: grafana/grafana:latest
     restart: unless-stopped
     networks:
-      - traefik_net
+      - labnet
     # environment:
       ###################################
       # Additional environment variables
@@ -263,7 +263,7 @@ services:
     image: containrrr/watchtower:latest
     restart: unless-stopped
     networks:
-      - traefik_net
+      - labnet
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
@@ -283,7 +283,7 @@ services:
     image: fmartinou/whats-up-docker:latest
     restart: unless-stopped
     networks:
-      - traefik_net
+      - labnet
     ports:
       - "3001:3000"
     volumes:
@@ -306,8 +306,11 @@ services:
 # NETWORKS
 ############################################################################
 networks:
-  traefik_net:
-    driver: bridge
+  labnet:
+    # Use the default network driver
+    name: labnet
+    # Uncomment if you want to use a specific driver
+    # driver: bridge
 
 ############################################################################
 # VOLUMES
